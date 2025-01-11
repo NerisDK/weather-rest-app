@@ -18,7 +18,6 @@ class WeatherApiService():
     async def _request(self, method: str, url: str) -> ClientResponse:
 
         async with aiohttp.ClientSession() as session:
-            print(url)
             response = await session.request(method, url)
 
             if response.status == 200: # OK
