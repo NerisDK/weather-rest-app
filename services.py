@@ -13,20 +13,21 @@ class WeatherApiService():
     def __init__(self, api_key:str, base_url: str) -> None:
         self.api_key = api_key
         self.base_url = base_url
+        self.session = aiohttp.ClientSession()
         
+    async def __aexit__(self, exc_type, exc_value, ext_tb):
+        await self.session.close()
 
     async def _request(self, method: str, url: str) -> ClientResponse:
+        response = await session.request(method, url)
 
-        async with aiohttp.ClientSession() as session:
-            print(url)
-            response = await session.request(method, url)
-
-            if response.status == 200: # OK
-                return response
-            else:
-                raise HTTPException(
-                    status_code=response.status,
-                    detail="Not Found")
+        if response.status == 200: # OK
+        # TODO: Добавить обработку других кодов
+            return response
+        else: 
+            raise HTTPException(
+                status_code=response.status,
+                detail="Not Found")
 
     
     async def _get_weather_by_url(self, url: str) -> WeatherResponse:
@@ -36,11 +37,11 @@ class WeatherApiService():
 
         try:
             return WeatherResponse(
-                city = data['name'],
+                city = data.get('name'),
                 temperature = round(
-                    int(data['main']['temp']) - 273.15, 2),
-                humidity = data['main']['humidity'],
-                description = data['weather'][0]['description'],
+                    int(data.get('main').get('temp')) - 273.15, 2),
+                humidity = data.get('main').get('humidity'),
+                description = data.get('weather')[0].get('description'),
             ) 
         except ValidationError as e:
             raise HTTPException(
