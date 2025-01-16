@@ -13,4 +13,4 @@ async def test_weather():
 if __name__ == '__main__':
     asyncio.run(test_weather())
 
-# использовать PyTest или Unittest для тестов
+# использовать PyTest или Unittest для тестов!!!

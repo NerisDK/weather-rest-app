@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 from models import WeatherRequest, WeatherResponse
+# некоторые либы не используется
 
 
 class WeatherApiService():
@@ -14,12 +15,14 @@ class WeatherApiService():
         self.api_key = api_key
         self.base_url = base_url
         self.session = aiohttp.ClientSession()
+        # сделать self.session как property (создавать если нет, отдавать если есть)
         
     async def __aexit__(self, exc_type, exc_value, ext_tb):
         await self.session.close()
+        # вроде бы это используется у контекстного метода. если так, то он здесь не нужен
 
     async def _request(self, method: str, url: str) -> ClientResponse:
-        response = await session.request(method, url)
+        response = await session.request(method, url) # ошибка
 
         if response.status == 200: # OK
         # TODO: Добавить обработку других кодов
@@ -36,6 +39,7 @@ class WeatherApiService():
         data = await response.json()
 
         try:
+            # лучше отдельным методом делать парсер, либо в модели (у пайдантика ВРОДЕ есть возможность делать), либо в самой либе, зависит от того планируется ли переиспользовать либу
             return WeatherResponse(
                 city = data.get('name'),
                 temperature = round(
@@ -55,5 +59,7 @@ class WeatherApiService():
         return await self._get_weather_by_url(url)
 
     def _build_url(self, place: WeatherRequest) -> str:
+        # этот построенный url можно хранить в селф, меняется только город, который можно указывать внутри внешнего метода
         return f'{self.base_url}?appid={self.api_key}&q={place.city}'
 
+# разделить комментарием публичные и приватные методы (просто для визуального удобства)

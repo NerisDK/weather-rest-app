@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException
 
 from models import WeatherResponse, WeatherRequest
 from services import WeatherApiService
+# убрать неиспользуемые либы
 
 
 app = FastAPI()
@@ -16,17 +17,19 @@ load_dotenv()
 
 WEATHER_APP_KEY = os.getenv("WEATHER_APP_KEY") 
 WEATHER_APP_BASE_URL = os.getenv("WEATHER_APP_BASE_URL")
+# подтягивать в другом файле (например, config.py), импортировать сюда
 
 weatherApiService = WeatherApiService(
     api_key=WEATHER_APP_KEY,
     base_url=WEATHER_APP_BASE_URL
 )
+# лучше создавать объект при каждом запросе
 
 @app.get("/weather")
 async def get_weather(place: WeatherRequest) -> WeatherResponse:
 
     return await weatherApiService.get_weather(place)
-    weatherApiService
+    weatherApiService  # ???
 
 # можно сделать автотесты, используя библиотеку, автотесты в последнюю очередь
 
