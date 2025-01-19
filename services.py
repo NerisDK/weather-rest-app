@@ -1,5 +1,3 @@
-import asyncio
-
 import aiohttp
 from aiohttp import ClientResponse
 from fastapi import HTTPException
@@ -22,7 +20,7 @@ class WeatherApiService():
         # вроде бы это используется у контекстного метода. если так, то он здесь не нужен
 
     async def _request(self, method: str, url: str) -> ClientResponse:
-        response = await session.request(method, url) # ошибка
+        response = await self.session.request(method, url) 
 
         if response.status == 200: # OK
         # TODO: Добавить обработку других кодов
