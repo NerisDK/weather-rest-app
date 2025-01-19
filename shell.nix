@@ -11,6 +11,7 @@ in pkgs.mkShell {
       python-dotenv
       aiohttp
       black
+      pip
     ]))
   ];
 }
