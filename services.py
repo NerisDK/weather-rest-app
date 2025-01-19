@@ -4,60 +4,63 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 from models import WeatherRequest, WeatherResponse
-# некоторые либы не используется
 
 
-class WeatherApiService():
+class WeatherApiService:
 
-    def __init__(self, api_key:str, base_url: str) -> None:
+    ## Class Methods ##
+    def __init__(self, api_key: str, base_url: str) -> None:
         self.api_key = api_key
         self.base_url = base_url
-        self.session = aiohttp.ClientSession()
-        # сделать self.session как property (создавать если нет, отдавать если есть)
-        
-    async def __aexit__(self, exc_type, exc_value, ext_tb):
-        await self.session.close()
-        # вроде бы это используется у контекстного метода. если так, то он здесь не нужен
+        self._session = None
+        self._url_template = f"{self.base_url}?appid={self.api_key}&q={{city}}"
 
+    @property
+    def session(self) -> aiohttp.ClientSession:
+        if self._session == None:
+            self._session = aiohttp.ClientSession()
+        return self._session
+
+
+    ## Public Methods ##
+    async def get_weather(self, place: WeatherRequest) -> WeatherResponse:
+        url = await self._build_url(place)
+
+        return await self._get_weather_by_url(url)
+
+
+    ## Private Methods ##
     async def _request(self, method: str, url: str) -> ClientResponse:
-        response = await self.session.request(method, url) 
+        response = await self.session.request(method, url)
 
-        if response.status == 200: # OK
-        # TODO: Добавить обработку других кодов
+        if response.status == 200:  # OK
+            # TODO: Добавить обработку других кодов
             return response
-        else: 
-            raise HTTPException(
-                status_code=response.status,
-                detail="Not Found")
+        else:
+            raise HTTPException(status_code=response.status, detail="Not Found")
 
-    
     async def _get_weather_by_url(self, url: str) -> WeatherResponse:
         response = await self._request("GET", url)
 
         data = await response.json()
+        weather_info = await self._parse_data(data=data)
 
+        return weather_info
+
+    async def _build_url(self, place: WeatherRequest) -> str:
+        return self._url_template.format(city=place.city)
+
+    async def _parse_data(self, data: dict) -> WeatherResponse:
         try:
-            # лучше отдельным методом делать парсер, либо в модели (у пайдантика ВРОДЕ есть возможность делать), либо в самой либе, зависит от того планируется ли переиспользовать либу
             return WeatherResponse(
-                city = data.get('name'),
-                temperature = round(
-                    int(data.get('main').get('temp')) - 273.15, 2),
-                humidity = data.get('main').get('humidity'),
-                description = data.get('weather')[0].get('description'),
-            ) 
+                city=data.get("name"),
+                temperature=round(int(data.get("main").get("temp")) - 273.15, 2),
+                humidity=data.get("main").get("humidity"),
+                description=data.get("weather")[0].get("description"),
+            )
+
+        except (KeyError, IndexError) as e:
+            raise HTTPException(status_code=422, detail="Missing required fields")
+
         except ValidationError as e:
-            raise HTTPException(
-               status_code=422,
-               detail='Invalid or no data'
-            ) 
-
-    async def get_weather(self, place: WeatherRequest) -> WeatherResponse:
-        url = self._build_url(place)
-
-        return await self._get_weather_by_url(url)
-
-    def _build_url(self, place: WeatherRequest) -> str:
-        # этот построенный url можно хранить в селф, меняется только город, который можно указывать внутри внешнего метода
-        return f'{self.base_url}?appid={self.api_key}&q={place.city}'
-
-# разделить комментарием публичные и приватные методы (просто для визуального удобства)
+            raise HTTPException(status_code=422, detail="Invalid or no data")
